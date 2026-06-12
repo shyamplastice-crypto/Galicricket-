@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏏 Gali Cricket Scorer</title>
+<title>🏏 Gali Cricket Pro Scorer</title>
 
 <style>
 :root{
@@ -52,6 +52,13 @@ h2{
     color:var(--secondary);
 }
 
+.team-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
 input,select{
     width:100%;
     padding:12px;
@@ -68,7 +75,7 @@ button{
 }
 
 button:hover{
-    transform:scale(1.03);
+    transform:scale(1.02);
 }
 
 .add-btn{
@@ -97,6 +104,29 @@ button:hover{
 .out-player{
     background:#fecaca;
     text-decoration:line-through;
+}
+
+.target-badge {
+    background: var(--warning);
+    color: #000;
+    text-align: center;
+    padding: 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.result-badge {
+    background: #dcfce7;
+    color: #15803d;
+    text-align: center;
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 20px;
+    margin-bottom: 15px;
+    border: 2px dashed #16a34a;
 }
 
 .scoreboard{
@@ -164,14 +194,28 @@ button:hover{
     font-size:16px;
 }
 
+.action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
 .wicket-btn{
-    width:100%;
     background:var(--danger);
     color:white;
     padding:15px;
     border-radius:12px;
     font-size:18px;
     font-weight:bold;
+}
+
+.inn-btn {
+    background: #3b82f6;
+    color: white;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .log{
@@ -201,6 +245,9 @@ button:hover{
     .scoreboard{
         grid-template-columns:1fr;
     }
+    .team-inputs {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 </head>
@@ -209,25 +256,37 @@ button:hover{
 
 <div class="container">
 
-<h1>🏏 Gali Cricket Scorer</h1>
-
-<div class="card">
-    <h2>Add Friends</h2>
-    <input type="text" id="playerInput" placeholder="Enter player name">
-    <button class="add-btn" onclick="addPlayer()">Add Player</button>
-    <br><br>
-    <div class="player-list" id="playerList"></div>
-</div>
+<h1>🏏 Gali Cricket Pro Scorer</h1>
 
 <div class="card">
     <h2>Match Setup</h2>
+    <div class="team-inputs">
+        <input type="text" id="battingTeamInput" placeholder="Batting Team Name (e.g. Team A)" value="Team 1">
+        <input type="text" id="bowlingTeamInput" placeholder="Bowling Team Name (e.g. Team B)" value="Team 2">
+    </div>
+    <input type="text" id="playerInput" placeholder="Enter player name and click Add">
+    <button class="add-btn" style="background:#64748b; margin-bottom:15px;" onclick="addPlayer()">➕ Add Player to Squad</button>
+    <div class="player-list" id="playerList"></div>
+    <hr style="margin:15px 0; border:0; border-top:1px solid #ddd;">
+    
+    <label>⚡ Striker:</label>
     <select id="striker"></select>
+    <label>🏏 Non-Striker:</label>
     <select id="nonStriker"></select>
+    <label>🎯 Bowler:</label>
     <select id="bowler"></select>
-    <button class="add-btn" onclick="saveSetup()">Save Players</button>
+    <button class="add-btn" onclick="saveSetup()">🚀 Start / Update Batsmen</button>
 </div>
 
+<div id="targetSection" class="card" style="display:none;">
+    <div id="targetDisplay" class="target-badge">Target: -</div>
+    <div id="equationDisplay" style="text-align:center; font-weight:bold; color:var(--secondary);"></div>
+</div>
+
+<div id="resultSection" class="result-badge" style="display:none;"></div>
+
 <div class="card">
+    <h2 id="liveMatchTitle" style="text-align:center; color:var(--primary); margin-bottom:10px;">Live Match</h2>
     <div class="scoreboard">
         <div class="score-box">
             <div>Score</div>
@@ -279,8 +338,9 @@ button:hover{
     </div>
 </div>
 
-<div class="card">
+<div class="card action-buttons">
     <button class="wicket-btn" onclick="wicket()">OUT</button>
+    <button class="inn-btn" onclick="switchInnings()">End Innings 🔁</button>
 </div>
 
 <div class="card">
@@ -289,7 +349,7 @@ button:hover{
 </div>
 
 <div class="card">
-    <button class="reset-btn" onclick="resetMatch()">Reset Match</button>
+    <button class="reset-btn" onclick="resetMatch()">Reset Whole Match 🔄</button>
 </div>
 
 </div>
@@ -305,19 +365,29 @@ let state = {
     nonStriker: "",
     bowler: "",
     overLog: [],
-    batsmanScores: {} // Stores {playerName: {runs: 0, balls: 0}}
+    batsmanScores: {}, 
+    
+    // Innings settings
+    innings: 1,
+    team1Name: "Team 1",
+    team2Name: "Team 2",
+    target: 0,
+    matchEnded: false,
+    winner: ""
 };
 
 loadData();
 
 function saveData(){
-    localStorage.setItem("galiCricketScorer", JSON.stringify(state));
+    localStorage.setItem("galiCricketProScorer", JSON.stringify(state));
 }
 
 function loadData(){
-    const saved = localStorage.getItem("galiCricketScorer");
+    const saved = localStorage.getItem("galiCricketProScorer");
     if(saved){
         state = JSON.parse(saved);
+        document.getElementById("battingTeamInput").value = state.innings === 1 ? state.team1Name : state.team2Name;
+        document.getElementById("bowlingTeamInput").value = state.innings === 1 ? state.team2Name : state.team1Name;
     }
     renderPlayers();
     updateUI();
@@ -376,6 +446,19 @@ function updateDropdowns(){
 }
 
 function saveSetup(){
+    if (state.matchEnded) return;
+    
+    let bTeam = document.getElementById("battingTeamInput").value.trim() || "Team 1";
+    let fTeam = document.getElementById("bowlingTeamInput").value.trim() || "Team 2";
+    
+    if(state.innings === 1) {
+        state.team1Name = bTeam;
+        state.team2Name = fTeam;
+    } else {
+        state.team2Name = bTeam;
+        state.team1Name = fTeam;
+    }
+
     state.striker = document.getElementById("striker").value;
     state.nonStriker = document.getElementById("nonStriker").value;
     state.bowler = document.getElementById("bowler").value;
@@ -387,7 +470,20 @@ function saveSetup(){
     saveData();
 }
 
+function checkMatchStatus() {
+    if(state.innings === 2) {
+        if(state.score >= state.target) {
+            state.matchEnded = true;
+            state.winner = state.team2Name;
+        } else if(state.wickets >= state.players.length - 1 && state.players.length > 1) {
+            state.matchEnded = true;
+            state.winner = state.team1Name;
+        }
+    }
+}
+
 function addRuns(runs){
+    if (state.matchEnded) { alert("Match already ended!"); return; }
     if(!state.striker || !state.nonStriker){
         alert("Please set up Striker and Non-Striker first!");
         return;
@@ -396,7 +492,6 @@ function addRuns(runs){
     state.balls++;
     state.overLog.push(runs);
     
-    // Update Striker individual score
     initBatsmanStats(state.striker);
     state.batsmanScores[state.striker].runs += runs;
     state.batsmanScores[state.striker].balls += 1;
@@ -404,26 +499,32 @@ function addRuns(runs){
     if(runs % 2 === 1){
         swapBatsmen();
     }
+    checkMatchStatus();
     overCompletion();
     updateUI();
     saveData();
 }
 
 function wideBall(){
+    if (state.matchEnded) return;
     state.score += 1;
     state.overLog.push("WD");
+    checkMatchStatus();
     updateUI();
     saveData();
 }
 
 function noBall(){
+    if (state.matchEnded) return;
     state.score += 1;
     state.overLog.push("NB");
+    checkMatchStatus();
     updateUI();
     saveData();
 }
 
 function byeRuns(){
+    if (state.matchEnded) return;
     if(!state.striker || !state.nonStriker){
         alert("Please set up Striker and Non-Striker first!");
         return;
@@ -434,43 +535,35 @@ function byeRuns(){
     state.balls++;
     state.overLog.push("B"+runs);
     
-    // Bye runs do not go to batsman runs, but ball is faced
     initBatsmanStats(state.striker);
     state.batsmanScores[state.striker].balls += 1;
 
     if(runs % 2 === 1){
         swapBatsmen();
     }
+    checkMatchStatus();
     overCompletion();
     updateUI();
     saveData();
 }
 
 function wicket(){
+    if (state.matchEnded) return;
     if(!state.striker || !state.nonStriker){
         alert("No batsmen are on the pitch!");
         return;
     }
 
     let choice = prompt("Who got out?\nType '1' for Striker ("+state.striker+")\nType '2' for Non-Striker ("+state.nonStriker+")");
-    
     let outPlayer = "";
-    if(choice === "1") {
-        outPlayer = state.striker;
-    } else if(choice === "2") {
-        outPlayer = state.nonStriker;
-    } else {
-        let typed = (choice || "").trim().toLowerCase();
-        if(typed === state.striker.toLowerCase()) outPlayer = state.striker;
-        else if(typed === state.nonStriker.toLowerCase()) outPlayer = state.nonStriker;
-    }
+    if(choice === "1") outPlayer = state.striker;
+    else if(choice === "2") outPlayer = state.nonStriker;
 
     if(!outPlayer){
-        alert("Invalid selection! Enter 1 or 2.");
+        alert("Invalid selection! Type 1 or 2.");
         return;
     }
 
-    // Wicket counts as a ball faced for striker
     initBatsmanStats(state.striker);
     if(outPlayer === state.striker) {
         state.batsmanScores[state.striker].balls += 1;
@@ -481,25 +574,30 @@ function wicket(){
     state.balls++;
     state.overLog.push("W");
 
+    checkMatchStatus();
+    if(state.matchEnded) {
+        overCompletion();
+        updateDropdowns();
+        renderPlayers();
+        updateUI();
+        saveData();
+        return;
+    }
+
     let available = state.players.filter(p =>
-        !state.outPlayers.includes(p) &&
-        p !== state.striker &&
-        p !== state.nonStriker
+        !state.outPlayers.includes(p) && p !== state.striker && p !== state.nonStriker
     );
 
     if(available.length > 0){
-        let newBatsman = prompt("New batsman name from available: \n" + available.join(", "));
+        let newBatsman = prompt("New batsman name from available:\n" + available.join(", "));
         if(newBatsman) {
             let matchedNew = available.find(p => p.toLowerCase() === newBatsman.trim().toLowerCase());
             if(matchedNew) {
-                if(outPlayer === state.striker){
-                    state.striker = matchedNew;
-                } else {
-                    state.nonStriker = matchedNew;
-                }
+                if(outPlayer === state.striker) state.striker = matchedNew;
+                else state.nonStriker = matchedNew;
                 initBatsmanStats(matchedNew);
             } else {
-                alert("New batsman name didn't match. Please set them up in Match Setup manually.");
+                alert("Name didn't match. Set up manually via Match Setup.");
                 if(outPlayer === state.striker) state.striker = "";
                 else state.nonStriker = "";
             }
@@ -511,11 +609,48 @@ function wicket(){
         alert("All players are OUT! Innings over.");
         if(outPlayer === state.striker) state.striker = "";
         else state.nonStriker = "";
+        if(state.innings === 1) {
+            switchInnings();
+        } else {
+            state.matchEnded = true;
+            state.winner = state.team1Name;
+        }
     }
 
     overCompletion();
     updateDropdowns();
     renderPlayers();
+    updateUI();
+    saveData();
+}
+
+function switchInnings() {
+    if(state.innings === 2) {
+        alert("Already in Innings 2!");
+        return;
+    }
+    if(state.score === 0) {
+        if(!confirm("Score is 0. Are you sure you want to end 1st Innings?")) return;
+    }
+    
+    state.target = state.score + 1;
+    alert(`1st Innings Over!\n${state.team1Name} scored: ${state.score}\nTarget for ${state.team2Name}: ${state.target} runs.`);
+    
+    state.innings = 2;
+    state.score = 0;
+    state.wickets = 0;
+    state.balls = 0;
+    state.striker = "";
+    state.nonStriker = "";
+    state.bowler = "";
+    state.outPlayers = [];
+    state.overLog = [];
+    
+    // Swap text fields
+    document.getElementById("battingTeamInput").value = state.team2Name;
+    document.getElementById("bowlingTeamInput").value = state.team1Name;
+    
+    updateDropdowns();
     updateUI();
     saveData();
 }
@@ -527,7 +662,7 @@ function swapBatsmen(){
 }
 
 function overCompletion(){
-    if(state.balls % 6 === 0 && state.balls > 0){
+    if(state.balls % 6 === 0 && state.balls > 0 && !state.matchEnded){
         swapBatsmen();
         state.overLog = [];
         alert("Over complete! Strike rotated.");
@@ -546,6 +681,9 @@ function calculateSR(runs, balls) {
 }
 
 function updateUI(){
+    let currentBatting = state.innings === 1 ? state.team1Name : state.team2Name;
+    document.getElementById("liveMatchTitle").textContent = `${currentBatting} is Batting (Innings ${state.innings})`;
+    
     document.getElementById("score").textContent = state.score;
     document.getElementById("wickets").textContent = state.wickets;
     document.getElementById("overs").textContent = getOvers();
@@ -553,7 +691,7 @@ function updateUI(){
     document.getElementById("currentNonStriker").textContent = state.nonStriker || "-";
     document.getElementById("currentBowler").textContent = state.bowler || "-";
 
-    // Update Live Batsman Scorecards
+    // Live Individual Batsman Score
     if(state.striker && state.batsmanScores[state.striker]) {
         let s = state.batsmanScores[state.striker];
         document.getElementById("strikerStats").textContent = `${s.runs} (${s.balls}b) SR: ${calculateSR(s.runs, s.balls)}`;
@@ -568,6 +706,25 @@ function updateUI(){
         document.getElementById("nonStrikerStats").textContent = "0 (0b) SR: 0";
     }
 
+    // Target Box Visibility
+    if(state.innings === 2) {
+        document.getElementById("targetSection").style.display = "block";
+        document.getElementById("targetDisplay").textContent = `🎯 TARGET: ${state.target} (Runs needed: ${state.target - state.score})`;
+        let runsNeeded = state.target - state.score;
+        document.getElementById("equationDisplay").textContent = `${state.team2Name} needs ${runsNeeded} runs to win.`;
+    } else {
+        document.getElementById("targetSection").style.display = "none";
+    }
+
+    // Winner Display
+    if(state.matchEnded) {
+        document.getElementById("resultSection").style.display = "block";
+        document.getElementById("resultSection").textContent = `🎉 🏆 WINNER: ${state.winner} WON THE MATCH! 🏆 🎉`;
+    } else {
+        document.getElementById("resultSection").style.display = "none";
+    }
+
+    // Render balls in over log
     const log = document.getElementById("overLog");
     log.innerHTML = "";
     state.overLog.forEach(ball=>{
@@ -579,8 +736,8 @@ function updateUI(){
 }
 
 function resetMatch(){
-    if(confirm("Are you sure you want to reset the match? All scores will be cleared.")){
-        localStorage.removeItem("galiCricketScorer");
+    if(confirm("Are you sure you want to completely RESET the match? This will delete all teams and runs.")){
+        localStorage.removeItem("galiCricketProScorer");
         state = {
             players: [],
             outPlayers: [],
@@ -591,8 +748,16 @@ function resetMatch(){
             nonStriker: "",
             bowler: "",
             overLog: [],
-            batsmanScores: {}
+            batsmanScores: {},
+            innings: 1,
+            team1Name: "Team 1",
+            team2Name: "Team 2",
+            target: 0,
+            matchEnded: false,
+            winner: ""
         };
+        document.getElementById("battingTeamInput").value = "Team 1";
+        document.getElementById("bowlingTeamInput").value = "Team 2";
         renderPlayers();
         updateDropdowns();
         updateUI();
