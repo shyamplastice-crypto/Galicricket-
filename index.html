@@ -58,6 +58,7 @@ input,select{
     border:1px solid #ddd;
     border-radius:10px;
     margin-bottom:10px;
+    font-size:16px;
 }
 
 button{
@@ -76,6 +77,8 @@ button:hover{
     padding:12px;
     width:100%;
     border-radius:10px;
+    font-size:16px;
+    font-weight:bold;
 }
 
 .player-list{
@@ -126,6 +129,7 @@ button:hover{
     background:#f8fafc;
     padding:12px;
     border-radius:10px;
+    font-size:16px;
 }
 
 .run-buttons{
@@ -149,9 +153,11 @@ button:hover{
     padding:14px;
     border-radius:12px;
     font-weight:bold;
+    font-size:16px;
 }
 
 .wicket-btn{
+    width:100%;
     background:var(--danger);
     color:white;
     padding:15px;
@@ -197,80 +203,47 @@ button:hover{
 
 <h1>🏏 Gali Cricket Scorer</h1>
 
-<!-- Players -->
 <div class="card">
     <h2>Add Friends</h2>
-
     <input type="text" id="playerInput" placeholder="Enter player name">
-
-    <button class="add-btn" onclick="addPlayer()">
-        Add Player
-    </button>
-
+    <button class="add-btn" onclick="addPlayer()">Add Player</button>
     <br><br>
-
     <div class="player-list" id="playerList"></div>
 </div>
 
-<!-- Match Setup -->
 <div class="card">
     <h2>Match Setup</h2>
-
     <select id="striker"></select>
     <select id="nonStriker"></select>
     <select id="bowler"></select>
-
-    <button class="add-btn" onclick="saveSetup()">
-        Save Players
-    </button>
+    <button class="add-btn" onclick="saveSetup()">Save Players</button>
 </div>
 
-<!-- Scoreboard -->
 <div class="card">
     <div class="scoreboard">
-
         <div class="score-box">
             <div>Score</div>
             <h3 id="score">0</h3>
         </div>
-
         <div class="score-box">
             <div>Wickets</div>
             <h3 id="wickets">0</h3>
         </div>
-
         <div class="score-box">
             <div>Overs</div>
             <h3 id="overs">0.0</h3>
         </div>
-
     </div>
 
     <div class="players-status">
-
-        <div class="status">
-            🏏 Striker:
-            <strong id="currentStriker">-</strong>
-        </div>
-
-        <div class="status">
-            🏏 Non-Striker:
-            <strong id="currentNonStriker">-</strong>
-        </div>
-
-        <div class="status">
-            🎯 Bowler:
-            <strong id="currentBowler">-</strong>
-        </div>
-
+        <div class="status">🏏 Striker: <strong id="currentStriker">-</strong></div>
+        <div class="status">🏏 Non-Striker: <strong id="currentNonStriker">-</strong></div>
+        <div class="status">🎯 Bowler: <strong id="currentBowler">-</strong></div>
     </div>
 </div>
 
-<!-- Runs -->
 <div class="card">
-
     <h2>Runs</h2>
-
     <div class="run-buttons">
         <button class="run-btn" onclick="addRuns(0)">0</button>
         <button class="run-btn" onclick="addRuns(1)">1</button>
@@ -279,59 +252,33 @@ button:hover{
         <button class="run-btn" onclick="addRuns(4)">4</button>
         <button class="run-btn" onclick="addRuns(6)">6</button>
     </div>
-
 </div>
 
-<!-- Extras -->
 <div class="card">
-
     <h2>Extras</h2>
-
     <div class="run-buttons">
-
-        <button class="extra-btn" onclick="wideBall()">
-            WD
-        </button>
-
-        <button class="extra-btn" onclick="noBall()">
-            NB
-        </button>
-
-        <button class="extra-btn" onclick="byeRuns()">
-            Bye
-        </button>
-
+        <button class="extra-btn" onclick="wideBall()">WD</button>
+        <button class="extra-btn" onclick="noBall()">NB</button>
+        <button class="extra-btn" onclick="byeRuns()">Bye</button>
     </div>
-
 </div>
 
-<!-- Wicket -->
 <div class="card">
-
-    <button class="wicket-btn" onclick="wicket()">
-        OUT
-    </button>
-
+    <button class="wicket-btn" onclick="wicket()">OUT</button>
 </div>
 
-<!-- Over Log -->
 <div class="card">
     <h2>Current Over</h2>
-
     <div class="log" id="overLog"></div>
 </div>
 
-<!-- Reset -->
 <div class="card">
-    <button class="reset-btn" onclick="resetMatch()">
-        Reset Match
-    </button>
+    <button class="reset-btn" onclick="resetMatch()">Reset Match</button>
 </div>
 
 </div>
 
 <script>
-
 let state = {
     players: [],
     outPlayers: [],
@@ -347,319 +294,224 @@ let state = {
 loadData();
 
 function saveData(){
-    localStorage.setItem(
-        "galiCricketScorer",
-        JSON.stringify(state)
-    );
+    localStorage.setItem("galiCricketScorer", JSON.stringify(state));
 }
 
 function loadData(){
-
-    const saved =
-        localStorage.getItem("galiCricketScorer");
-
+    const saved = localStorage.getItem("galiCricketScorer");
     if(saved){
         state = JSON.parse(saved);
     }
-
     renderPlayers();
     updateUI();
     updateDropdowns();
 }
 
 function addPlayer(){
-
-    const input =
-        document.getElementById("playerInput");
-
+    const input = document.getElementById("playerInput");
     const name = input.value.trim();
-
     if(!name) return;
-
     if(!state.players.includes(name)){
         state.players.push(name);
     }
-
     input.value = "";
-
     updateDropdowns();
     renderPlayers();
     saveData();
 }
 
 function renderPlayers(){
-
-    const list =
-        document.getElementById("playerList");
-
+    const list = document.getElementById("playerList");
     list.innerHTML = "";
-
     state.players.forEach(player=>{
-
-        const div =
-            document.createElement("div");
-
-        div.className =
-            state.outPlayers.includes(player)
-            ? "player-chip out-player"
-            : "player-chip";
-
+        const div = document.createElement("div");
+        div.className = state.outPlayers.includes(player) ? "player-chip out-player" : "player-chip";
         div.textContent = player;
-
         list.appendChild(div);
-
     });
 }
 
 function updateDropdowns(){
-
-    const ids =
-        ["striker","nonStriker","bowler"];
-
+    const ids = ["striker","nonStriker","bowler"];
     ids.forEach(id=>{
-
-        const select =
-            document.getElementById(id);
-
-        select.innerHTML =
-            "<option value=''>Select "+id+"</option>";
-
+        const select = document.getElementById(id);
+        select.innerHTML = "<option value=''>Select " + id.toUpperCase() + "</option>";
         state.players.forEach(player=>{
-
-            let option =
-                document.createElement("option");
-
-            option.value = player;
-            option.textContent = player;
-
-            select.appendChild(option);
-
+            if(!state.outPlayers.includes(player)) {
+                let option = document.createElement("option");
+                option.value = player;
+                option.textContent = player;
+                select.appendChild(option);
+            }
         });
-
     });
-
 }
 
 function saveSetup(){
-
-    state.striker =
-        document.getElementById("striker").value;
-
-    state.nonStriker =
-        document.getElementById("nonStriker").value;
-
-    state.bowler =
-        document.getElementById("bowler").value;
-
+    state.striker = document.getElementById("striker").value;
+    state.nonStriker = document.getElementById("nonStriker").value;
+    state.bowler = document.getElementById("bowler").value;
     updateUI();
     saveData();
 }
 
 function addRuns(runs){
-
+    if(!state.striker || !state.nonStriker){
+        alert("Please set up Striker and Non-Striker first!");
+        return;
+    }
     state.score += runs;
-
     state.balls++;
-
     state.overLog.push(runs);
-
     if(runs % 2 === 1){
         swapBatsmen();
     }
-
     overCompletion();
-
     updateUI();
     saveData();
 }
 
 function wideBall(){
-
     state.score += 1;
-
     state.overLog.push("WD");
-
     updateUI();
     saveData();
 }
 
 function noBall(){
-
     state.score += 1;
-
     state.overLog.push("NB");
-
     updateUI();
     saveData();
 }
 
 function byeRuns(){
-
-    let runs =
-        parseInt(prompt("Enter Bye Runs"));
-
+    if(!state.striker || !state.nonStriker){
+        alert("Please set up Striker and Non-Striker first!");
+        return;
+    }
+    let runs = parseInt(prompt("Enter Bye Runs"));
     if(isNaN(runs)) return;
-
     state.score += runs;
-
     state.balls++;
-
     state.overLog.push("B"+runs);
-
     if(runs % 2 === 1){
         swapBatsmen();
     }
-
     overCompletion();
-
     updateUI();
     saveData();
 }
 
 function wicket(){
+    if(!state.striker || !state.nonStriker){
+        alert("No batsmen are on the pitch!");
+        return;
+    }
 
-    let outPlayer =
-        prompt(
-            "Who got out?\n\n" +
-            state.striker +
-            " or " +
-            state.nonStriker
-        );
+    let choice = prompt("Who got out?\nType '1' for Striker ("+state.striker+")\nType '2' for Non-Striker ("+state.nonStriker+")");
+    
+    let outPlayer = "";
+    if(choice === "1") {
+        outPlayer = state.striker;
+    } else if(choice === "2") {
+        outPlayer = state.nonStriker;
+    } else {
+        // Fallback for names
+        let typed = (choice || "").trim().toLowerCase();
+        if(typed === state.striker.toLowerCase()) outPlayer = state.striker;
+        else if(typed === state.nonStriker.toLowerCase()) outPlayer = state.nonStriker;
+    }
 
-    if(!outPlayer) return;
-
-    if(
-        outPlayer !== state.striker &&
-        outPlayer !== state.nonStriker
-    ){
-        alert("Invalid player");
+    if(!outPlayer){
+        alert("Invalid selection! Enter 1 or 2.");
         return;
     }
 
     state.outPlayers.push(outPlayer);
-
     state.wickets++;
-
     state.balls++;
-
     state.overLog.push("W");
 
-    let available =
-        state.players.filter(p =>
-            !state.outPlayers.includes(p) &&
-            p !== state.striker &&
-            p !== state.nonStriker
-        );
+    let available = state.players.filter(p =>
+        !state.outPlayers.includes(p) &&
+        p !== state.striker &&
+        p !== state.nonStriker
+    );
 
-    if(available.length){
-
-        let newBatsman =
-            prompt(
-                "New batsman:\n" +
-                available.join(", ")
-            );
-
-        if(newBatsman){
-
-            if(outPlayer === state.striker){
-                state.striker = newBatsman;
-            }else{
-                state.nonStriker = newBatsman;
+    if(available.length > 0){
+        let newBatsman = prompt("New batsman name from available: \n" + available.join(", "));
+        if(newBatsman) {
+            let matchedNew = available.find(p => p.toLowerCase() === newBatsman.trim().toLowerCase());
+            if(matchedNew) {
+                if(outPlayer === state.striker){
+                    state.striker = matchedNew;
+                } else {
+                    state.nonStriker = matchedNew;
+                }
+            } else {
+                alert("New batsman name didn't match. Please set them up in Match Setup manually.");
+                if(outPlayer === state.striker) state.striker = "";
+                else state.nonStriker = "";
             }
+        } else {
+            if(outPlayer === state.striker) state.striker = "";
+            else state.nonStriker = "";
         }
+    } else {
+        alert("All players are OUT! Innings over.");
+        if(outPlayer === state.striker) state.striker = "";
+        else state.nonStriker = "";
     }
 
     overCompletion();
-
+    updateDropdowns();
     renderPlayers();
     updateUI();
     saveData();
 }
 
 function swapBatsmen(){
-
     let temp = state.striker;
-
-    state.striker =
-        state.nonStriker;
-
-    state.nonStriker =
-        temp;
+    state.striker = state.nonStriker;
+    state.nonStriker = temp;
 }
 
 function overCompletion(){
-
-    if(state.balls % 6 === 0){
-
+    if(state.balls % 6 === 0 && state.balls > 0){
         swapBatsmen();
-
         state.overLog = [];
+        alert("Over complete! Strike rotated.");
     }
 }
 
 function getOvers(){
-
-    let overs =
-        Math.floor(state.balls / 6);
-
-    let balls =
-        state.balls % 6;
-
+    let overs = Math.floor(state.balls / 6);
+    let balls = state.balls % 6;
     return overs + "." + balls;
 }
 
 function updateUI(){
+    document.getElementById("score").textContent = state.score;
+    document.getElementById("wickets").textContent = state.wickets;
+    document.getElementById("overs").textContent = getOvers();
+    document.getElementById("currentStriker").textContent = state.striker || "-";
+    document.getElementById("currentNonStriker").textContent = state.nonStriker || "-";
+    document.getElementById("currentBowler").textContent = state.bowler || "-";
 
-    document.getElementById("score")
-        .textContent = state.score;
-
-    document.getElementById("wickets")
-        .textContent = state.wickets;
-
-    document.getElementById("overs")
-        .textContent = getOvers();
-
-    document.getElementById("currentStriker")
-        .textContent = state.striker || "-";
-
-    document.getElementById("currentNonStriker")
-        .textContent = state.nonStriker || "-";
-
-    document.getElementById("currentBowler")
-        .textContent = state.bowler || "-";
-
-    const log =
-        document.getElementById("overLog");
-
+    const log = document.getElementById("overLog");
     log.innerHTML = "";
-
     state.overLog.forEach(ball=>{
-
-        let span =
-            document.createElement("div");
-
+        let span = document.createElement("div");
         span.className = "ball";
-
         span.textContent = ball;
-
         log.appendChild(span);
-
     });
-
 }
 
 function resetMatch(){
-
-    if(
-        confirm(
-            "Reset match?"
-        )
-    ){
-
-        localStorage.removeItem(
-            "galiCricketScorer"
-        );
-
+    if(confirm("Are you sure you want to reset the match? All scores will be cleared.")){
+        localStorage.removeItem("galiCricketScorer");
         state = {
             players: [],
             outPlayers: [],
@@ -671,13 +523,11 @@ function resetMatch(){
             bowler: "",
             overLog: []
         };
-
         renderPlayers();
         updateDropdowns();
         updateUI();
     }
 }
-
 </script>
 
 </body>
