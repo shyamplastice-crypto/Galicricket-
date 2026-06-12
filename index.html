@@ -130,6 +130,14 @@ button:hover{
     padding:12px;
     border-radius:10px;
     font-size:16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.batsman-stats {
+    font-weight:bold;
+    color:var(--primary);
 }
 
 .run-buttons{
@@ -236,9 +244,17 @@ button:hover{
     </div>
 
     <div class="players-status">
-        <div class="status">🏏 Striker: <strong id="currentStriker">-</strong></div>
-        <div class="status">🏏 Non-Striker: <strong id="currentNonStriker">-</strong></div>
-        <div class="status">🎯 Bowler: <strong id="currentBowler">-</strong></div>
+        <div class="status">
+            <div>⚡ Striker: <strong id="currentStriker">-</strong></div>
+            <div class="batsman-stats" id="strikerStats">0 (0b) SR: 0</div>
+        </div>
+        <div class="status">
+            <div>🏏 Non-Striker: <strong id="currentNonStriker">-</strong></div>
+            <div class="batsman-stats" id="nonStrikerStats">0 (0b) SR: 0</div>
+        </div>
+        <div class="status">
+            <div>🎯 Bowler: <strong id="currentBowler">-</strong></div>
+        </div>
     </div>
 </div>
 
@@ -288,7 +304,8 @@ let state = {
     striker: "",
     nonStriker: "",
     bowler: "",
-    overLog: []
+    overLog: [],
+    batsmanScores: {} // Stores {playerName: {runs: 0, balls: 0}}
 };
 
 loadData();
@@ -305,6 +322,12 @@ function loadData(){
     renderPlayers();
     updateUI();
     updateDropdowns();
+}
+
+function initBatsmanStats(name) {
+    if (name && !state.batsmanScores[name]) {
+        state.batsmanScores[name] = { runs: 0, balls: 0 };
+    }
 }
 
 function addPlayer(){
@@ -326,7 +349,12 @@ function renderPlayers(){
     state.players.forEach(player=>{
         const div = document.createElement("div");
         div.className = state.outPlayers.includes(player) ? "player-chip out-player" : "player-chip";
-        div.textContent = player;
+        
+        let statsText = "";
+        if(state.batsmanScores[player]) {
+            statsText = ` (${state.batsmanScores[player].runs} runs, ${state.batsmanScores[player].balls}b)`;
+        }
+        div.textContent = player + statsText;
         list.appendChild(div);
     });
 }
@@ -351,6 +379,10 @@ function saveSetup(){
     state.striker = document.getElementById("striker").value;
     state.nonStriker = document.getElementById("nonStriker").value;
     state.bowler = document.getElementById("bowler").value;
+    
+    initBatsmanStats(state.striker);
+    initBatsmanStats(state.nonStriker);
+    
     updateUI();
     saveData();
 }
@@ -363,6 +395,12 @@ function addRuns(runs){
     state.score += runs;
     state.balls++;
     state.overLog.push(runs);
+    
+    // Update Striker individual score
+    initBatsmanStats(state.striker);
+    state.batsmanScores[state.striker].runs += runs;
+    state.batsmanScores[state.striker].balls += 1;
+
     if(runs % 2 === 1){
         swapBatsmen();
     }
@@ -395,6 +433,11 @@ function byeRuns(){
     state.score += runs;
     state.balls++;
     state.overLog.push("B"+runs);
+    
+    // Bye runs do not go to batsman runs, but ball is faced
+    initBatsmanStats(state.striker);
+    state.batsmanScores[state.striker].balls += 1;
+
     if(runs % 2 === 1){
         swapBatsmen();
     }
@@ -417,7 +460,6 @@ function wicket(){
     } else if(choice === "2") {
         outPlayer = state.nonStriker;
     } else {
-        // Fallback for names
         let typed = (choice || "").trim().toLowerCase();
         if(typed === state.striker.toLowerCase()) outPlayer = state.striker;
         else if(typed === state.nonStriker.toLowerCase()) outPlayer = state.nonStriker;
@@ -426,6 +468,12 @@ function wicket(){
     if(!outPlayer){
         alert("Invalid selection! Enter 1 or 2.");
         return;
+    }
+
+    // Wicket counts as a ball faced for striker
+    initBatsmanStats(state.striker);
+    if(outPlayer === state.striker) {
+        state.batsmanScores[state.striker].balls += 1;
     }
 
     state.outPlayers.push(outPlayer);
@@ -449,6 +497,7 @@ function wicket(){
                 } else {
                     state.nonStriker = matchedNew;
                 }
+                initBatsmanStats(matchedNew);
             } else {
                 alert("New batsman name didn't match. Please set them up in Match Setup manually.");
                 if(outPlayer === state.striker) state.striker = "";
@@ -491,6 +540,11 @@ function getOvers(){
     return overs + "." + balls;
 }
 
+function calculateSR(runs, balls) {
+    if (balls === 0) return 0;
+    return Math.round((runs / balls) * 100);
+}
+
 function updateUI(){
     document.getElementById("score").textContent = state.score;
     document.getElementById("wickets").textContent = state.wickets;
@@ -498,6 +552,21 @@ function updateUI(){
     document.getElementById("currentStriker").textContent = state.striker || "-";
     document.getElementById("currentNonStriker").textContent = state.nonStriker || "-";
     document.getElementById("currentBowler").textContent = state.bowler || "-";
+
+    // Update Live Batsman Scorecards
+    if(state.striker && state.batsmanScores[state.striker]) {
+        let s = state.batsmanScores[state.striker];
+        document.getElementById("strikerStats").textContent = `${s.runs} (${s.balls}b) SR: ${calculateSR(s.runs, s.balls)}`;
+    } else {
+        document.getElementById("strikerStats").textContent = "0 (0b) SR: 0";
+    }
+
+    if(state.nonStriker && state.batsmanScores[state.nonStriker]) {
+        let ns = state.batsmanScores[state.nonStriker];
+        document.getElementById("nonStrikerStats").textContent = `${ns.runs} (${ns.balls}b) SR: ${calculateSR(ns.runs, ns.balls)}`;
+    } else {
+        document.getElementById("nonStrikerStats").textContent = "0 (0b) SR: 0";
+    }
 
     const log = document.getElementById("overLog");
     log.innerHTML = "";
@@ -521,7 +590,8 @@ function resetMatch(){
             striker: "",
             nonStriker: "",
             bowler: "",
-            overLog: []
+            overLog: [],
+            batsmanScores: {}
         };
         renderPlayers();
         updateDropdowns();
